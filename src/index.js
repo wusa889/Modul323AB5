@@ -12,6 +12,7 @@ const btnStyle = "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 r
 // Messages which can be used to update the model
 const MSGS = {
   ADD_STUFF: "ADD_STUFF",
+  DELETE_ITEM: "DELETE_ITEM",
   // ... ℹ️ additional messages
 };
 
@@ -23,13 +24,30 @@ function view(dispatch, model) {
       input({ className: "ml-2 shadow-md border", id: "input1" }),
       label({ className: "ml-2", for: "input2" }, "Calories:"),
       input({ className: "ml-2 shadow-md border", id: "input2", type: "text" }),
-      button({className: btnStyle, onclick: () => dispatch({type: MSGS.ADD_STUFF, payload: { meal: document.getElementById("input1").value, calories: document.getElementById("input2").value }, }), }, "add"),
+      button(
+        {
+          className: btnStyle,
+          onclick: () =>
+            dispatch({
+              type: MSGS.ADD_STUFF,
+              payload: { meal: document.getElementById("input1").value, calories: document.getElementById("input2").value },
+            }),
+        },
+        "add"
+      ),
     ]),
     table([
       thead([tr({ className: "p-4" }, [th({ className: "p-4" }, "Meal"), th({ className: "p-4" }, "Calories")])]),
       tbody(
         { id: "tbody" },
-        model.tItems.map((item) => tr([td({ className: "p-2" }, item.meal), td({ className: "p-2" }, item.calories.toString())]))
+        model.tItems.map((item) =>
+          tr([
+            td({ className: "p-2" }, item.meal),
+            td({ className: "p-2" }, item.calories.toString()),
+            td([button({className: btnStyle, onclick: () => dispatch({ type: MSGS.DELETE_ITEM, payload: item.id }),},"Löschen"),
+            ]),
+          ])
+        )
       ),
     ]),
     p(`Total Calories: ${model.totalCalories || 0}`),
@@ -51,13 +69,20 @@ function update(msg, model) {
       return { ...model, counter: model.counter + 1 };
     case MSGS.UPDATE_DECREASE_COUNTER:
       return { ...model, counter: model.counter - 1 };
-      case MSGS.ADD_STUFF:
-        const meal = msg.payload.meal;
-        const calories = parseInt(msg.payload.calories, 10);
-        const newTItem = { id: model.tItems.length + 1, meal, calories };
-        const updatedTItems = model.tItems.concat(newTItem);
-        const totalCalories = calculateTotalCalories(updatedTItems);
-        return { ...model, tItems: updatedTItems, totalCalories };
+    case MSGS.ADD_STUFF:
+      const meal = msg.payload.meal;
+      const calories = parseInt(msg.payload.calories, 10);
+      const id = Date.now();
+      const newTItem = { id, meal, calories };
+      const updatedTItems = model.tItems.concat(newTItem);
+      const totalCalories = calculateTotalCalories(updatedTItems);
+      return { ...model, tItems: updatedTItems, totalCalories };
+    case MSGS.DELETE_ITEM:
+      const iddel = msg.payload;
+      const filteredTItems = model.tItems.filter((item) => item.id !== iddel);
+      const totalCaloriesAfterDeletion = calculateTotalCalories(filteredTItems);
+      return { ...model, tItems: filteredTItems, totalCalories: totalCaloriesAfterDeletion };
+
     default:
       return model;
   }
